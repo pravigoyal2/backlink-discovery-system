@@ -1,0 +1,8 @@
+name = "backlink-discovery-system"
+compatibility_date = "2026-10-01"
+pages_build_output_dir = "public"
+
+# For local Wrangler usage, bind your namespace like this:
+# [[kv_namespaces]]
+# binding = "LINKS_KV"
+# id = "YOUR_KV_NAMESPACE_ID"
