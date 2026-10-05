@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Backlink Discovery Admin</title>
+  <meta name="robots" content="noindex,nofollow">
+  <style>
+    *{box-sizing:border-box}
+    body{font-family:Arial,sans-serif;margin:0;background:#f5f7fb;color:#111827}
+    .wrap{max-width:980px;margin:auto;padding:36px 18px}
+    .card{background:white;border:1px solid #e5e7eb;border-radius:18px;padding:24px;margin-bottom:18px}
+    h1{margin-top:0}
+    textarea,input{width:100%;padding:13px;border:1px solid #cfd5df;border-radius:10px;font-size:15px}
+    textarea{min-height:230px;resize:vertical}
+    button{border:0;border-radius:10px;padding:13px 18px;background:#111827;color:white;font-weight:700;cursor:pointer}
+    .muted{color:#6b7280;font-size:14px;line-height:1.6}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .status{white-space:pre-wrap;background:#0b1020;color:#d5e3ff;padding:14px;border-radius:10px;min-height:56px}
+    @media(max-width:700px){.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Fast URL Discovery Admin</h1>
+    <p class="muted">Paste one URL per line. Optional format: <code>URL | Anchor text</code>. This submits URLs to your own crawlable discovery hub; it does not guarantee Google indexing.</p>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label><strong>Admin Key</strong></label>
+        <input id="key" type="password" placeholder="Your ADMIN_KEY">
+      </div>
+      <div>
+        <label><strong>Default Anchor Prefix (optional)</strong></label>
+        <input id="prefix" placeholder="Useful resource">
+      </div>
+    </div>
+
+    <p><strong>URLs</strong></p>
+    <textarea id="urls" placeholder="https://example.com/article-1 | Calgary moving guide&#10;https://example.com/article-2"></textarea>
+
+    <p>
+      <button onclick="submitUrls()">Add URLs</button>
+    </p>
+
+    <div id="status" class="status">Ready.</div>
+  </div>
+</div>
+
+<script>
+async function submitUrls(){
+  const status = document.getElementById('status');
+  const key = document.getElementById('key').value.trim();
+  const prefix = document.getElementById('prefix').value.trim();
+  const lines = document.getElementById('urls').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+
+  if(!key){ status.textContent = 'Enter the admin key.'; return; }
+  if(!lines.length){ status.textContent = 'Paste at least one URL.'; return; }
+
+  const items = lines.map((line, i) => {
+    const parts = line.split('|');
+    const url = (parts[0] || '').trim();
+    const anchor = (parts[1] || '').trim() || (prefix ? `${prefix} ${i+1}` : '');
+    return {url, anchor};
+  });
+
+  status.textContent = `Submitting ${items.length} URL(s)...`;
+
+  try{
+    const res = await fetch('/api/add', {
+      method:'POST',
+      headers:{
+        'content-type':'application/json',
+        'x-admin-key':key
+      },
+      body:JSON.stringify({items})
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Request failed');
+    status.textContent = `Added: ${data.added}\nSkipped: ${data.skipped}\nTotal stored: ${data.total}\n\nLatest hub: ${location.origin}/latest\nSitemap: ${location.origin}/sitemap.xml`;
+  }catch(err){
+    status.textContent = 'Error: ' + err.message;
+  }
+}
+</script>
+</body>
+</html>
